@@ -133,6 +133,44 @@ set_source_files_properties(
 )
 endmacro()
 
+
+# TODO: How to pass additional Cython includes to the custom command?
+
+macro(thrift_cython_to_cxx filename)
+  foreach(_src
+    "types"
+    "clients"
+    "services"
+  )
+    set(_pyx "gen-py3/${filename}/${_src}.pyx")
+    set(_cxx "gen-py3/${filename}/${_src}.cpp")
+    string(REPLACE "/" "-" _module_name "${filename}/${_src}-py3")
+    message(STATUS "Create Cython module ${_module_name} from ${_pyx}")
+
+    add_custom_command(OUTPUT ${_cxx}
+      COMMAND ${CYTHON_EXE} --fast-fail -3 --cplus ${_pyx} -o ${_cxx}
+        -I${THRIFT_BUILD}/thrift/lib/py3/cybld/
+      COMMENT "Generating ${_cxx} using Cython"
+    )
+
+    if(${_src} STREQUAL "types")
+      python_add_module(${_module_name} "${_cxx}")
+    else()
+      python_add_module(${_module_name} "${_cxx}"
+        "gen-py3/${filename}/${_src}_wrapper.cpp"
+      )
+      set_source_files_properties(
+        "gen-py3/${filename}/${_src}_wrapper.cpp"
+        PROPERTIES GENERATED TRUE
+      )
+    endif()
+    set_target_properties(${_module_name}
+      PROPERTIES
+      LIBRARY_OUTPUT_DIRECTORY "gen-py3/${filename}"
+      LIBRARY_OUTPUT_NAME ${_src})
+  endforeach()
+endmacro()
+
 #
 # thrift_generate
 # This is used to codegen thrift files using the thrift compiler
