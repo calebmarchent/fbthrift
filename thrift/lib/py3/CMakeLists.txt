@@ -77,7 +77,7 @@ foreach(_mod ${cpp_tgts})
   )
 
   python_add_module(${_module_name} "${_cxx}")
-  target_link_libraries(${_module_name} thriftcpp2_shared)
+  target_link_libraries(${_module_name} thriftcpp2_shared Folly::folly)
   set_target_properties(${_module_name}
     PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY "cybld/${_d}"
@@ -85,6 +85,6 @@ foreach(_mod ${cpp_tgts})
   )
 endforeach()
 
-include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS}  /home/vagrant/LogDevice/_bionic/staging/usr/local/include)
 
 add_subdirectory(test)

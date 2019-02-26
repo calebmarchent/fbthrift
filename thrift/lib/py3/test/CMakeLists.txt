@@ -100,6 +100,6 @@ foreach(_src
     LIBRARY_OUTPUT_DIRECTORY gen-py3/test
     LIBRARY_OUTPUT_NAME "${_src}")
 
-  target_link_libraries(${_module_name} iobuf-cpp2 thriftcpp2_shared)
+  target_link_libraries(${_module_name} iobuf-cpp2 thriftcpp2_shared Folly::folly)
 endforeach()
 
