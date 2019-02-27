@@ -135,41 +135,44 @@ endmacro()
 
 
 macro(thrift_cython_to_cxx filename)
-  foreach(_src
+
+  # Parse the arguments
+  set(_sources
     "types"
     "clients"
     "services"
   )
-    # Parse the arguments
-    set(_nextarg)
-    set(_dependencies)
-    set(_working_directory)
-    set(_wd_prefix)
-    set(_cython_includes)
-    foreach(_arg ${ARGN})
-      if("${_arg}" STREQUAL "WORKING_DIRECTORY")
-        set(_nextarg "WORKING_DIRECTORY")
-      elseif ("${_arg}" STREQUAL "DEPENDS")
-        set(_nextarg "DEPENDS")
-      elseif ("${_arg}" STREQUAL "CYTHON_INCLUDES")
-        set(_nextarg "CYTHON_INCLUDES")
+  set(_nextarg)
+  set(_dependencies)
+  set(_working_directory)
+  set(_wd_prefix)
+  set(_cython_includes)
+  foreach(_arg ${ARGN})
+    if("${_arg}" STREQUAL "WORKING_DIRECTORY")
+      set(_nextarg "WORKING_DIRECTORY")
+    elseif ("${_arg}" STREQUAL "DEPENDS")
+      set(_nextarg "DEPENDS")
+    elseif ("${_arg}" STREQUAL "CYTHON_INCLUDES")
+      set(_nextarg "CYTHON_INCLUDES")
+    elseif ("${_arg}" STREQUAL "NO_SERVICES")
+      set(_sources "types")
+    else()
+      if("${_nextarg}" STREQUAL "WORKING_DIRECTORY")
+        set(_working_directory ${_arg})
+        set(_wd_prefix "${_arg}/")
+        set(_nextarg)
+      elseif("${_nextarg}" STREQUAL "DEPENDS")
+        list(APPEND _dependencies ${_arg})
+      elseif("${_nextarg}" STREQUAL "CYTHON_INCLUDES")
+        list(APPEND _cython_includes "-I${_arg}")
       else()
-        if("${_nextarg}" STREQUAL "WORKING_DIRECTORY")
-          set(_working_directory ${_arg})
-          set(_wd_prefix "${_arg}/")
-          set(_nextarg)
-        elseif("${_nextarg}" STREQUAL "DEPENDS")
-          list(APPEND _dependencies ${_arg})
-        elseif("${_nextarg}" STREQUAL "CYTHON_INCLUDES")
-          list(APPEND _cython_includes "-I${_arg}")
-        else()
-          message(FATAL_ERROR "Unexpected parameter '${_arg}' in "
-            "thrift_cython_to_cxx call")
-        endif()
+        message(FATAL_ERROR "Unexpected parameter '${_arg}' in "
+          "thrift_cython_to_cxx call")
       endif()
-    endforeach()
+    endif()
+  endforeach()
 
-
+  foreach(_src ${_sources})
     set(_pyx "gen-py3/${filename}/${_src}.pyx")
     set(_cxx "gen-py3/${filename}/${_src}.cpp")
     string(REPLACE "/" "-" _module_name "${filename}/${_src}-py3")
@@ -186,14 +189,17 @@ macro(thrift_cython_to_cxx filename)
     if(${_src} STREQUAL "types")
       python_add_module(${_module_name} "${_wd_prefix}${_cxx}")
     else()
+      get_filename_component(_wrapper_location ${filename} NAME)
       python_add_module(${_module_name} "${_wd_prefix}${_cxx}"
-        "${_wd_prefix}gen-py3/${filename}/${_src}_wrapper.cpp"
+        "${_wd_prefix}gen-py3/${_wrapper_location}/${_src}_wrapper.cpp"
       )
       set_source_files_properties(
-        "${_wd_prefix}gen-py3/${filename}/${_src}_wrapper.cpp"
+        "${_wd_prefix}gen-py3/${_wrapper_location}/${_src}_wrapper.cpp"
         PROPERTIES GENERATED TRUE
       )
     endif()
+ #   target_link_libraries(${_module_name})
+
     set_source_files_properties(
       "${_wd_prefix}${_cxx}"
       PROPERTIES GENERATED TRUE
