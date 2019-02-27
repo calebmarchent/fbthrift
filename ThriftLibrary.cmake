@@ -175,7 +175,7 @@ macro(thrift_cython_to_cxx filename)
     string(REPLACE "/" "-" _module_name "${filename}/${_src}-py3")
     message(STATUS "Create Cython module ${_module_name} from ${_pyx}")
 
-    add_custom_command(OUTPUT ${_cxx}
+    add_custom_command(OUTPUT "${_wd_prefix}${_cxx}"
       COMMAND ${CYTHON_EXE} --fast-fail -3 --cplus ${_pyx} -o ${_cxx}
         ${_cython_includes}
       COMMENT "Generating ${_cxx} using Cython"
@@ -204,7 +204,7 @@ macro(thrift_cython_to_cxx filename)
       LIBRARY_OUTPUT_NAME ${_src})
   endforeach()
 
-  include_directories(${PYTHON_INCLUDES})
+  include_directories(${PYTHON_INCLUDE_DIRS})
 endmacro()
 
 #
