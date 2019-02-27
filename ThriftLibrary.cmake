@@ -135,6 +135,7 @@ endmacro()
 
 
 # TODO: How to pass additional Cython includes to the custom command?
+# filename .. depenencies
 
 macro(thrift_cython_to_cxx filename)
   foreach(_src
@@ -142,6 +143,27 @@ macro(thrift_cython_to_cxx filename)
     "clients"
     "services"
   )
+    # Parse the arguments
+    set(_nextarg)
+    set(_dependencies)
+    foreach(_arg ${ARGN})
+      if("${_arg}" STREQUAL "WORKING_DIRECTORY")
+        set(_nextarg "WORKING_DIRECTORY")
+      elseif ("${_arg}" STREQUAL "DEPENDS")
+        set(_nextarg "DEPENDS")
+      else()
+        if("${_nextarg}" STREQUAL "WORKING_DIRECTORY")
+          set(_working_directory ${_arg})
+          set(_nextarg)
+        elseif("${_nextarg}" STREQUAL "DEPENDS")
+          list(APPEND _dependencies ${_arg})
+        else()
+          message(FATAL_ERROR "Unexpected parameter '${_arg}' in "
+            "thrift_cython_to_cxx call")
+        endif()
+      endif()
+    endforeach()
+
     set(_pyx "gen-py3/${filename}/${_src}.pyx")
     set(_cxx "gen-py3/${filename}/${_src}.cpp")
     string(REPLACE "/" "-" _module_name "${filename}/${_src}-py3")
@@ -151,6 +173,8 @@ macro(thrift_cython_to_cxx filename)
       COMMAND ${CYTHON_EXE} --fast-fail -3 --cplus ${_pyx} -o ${_cxx}
         -I${THRIFT_BUILD}/thrift/lib/py3/cybld/
       COMMENT "Generating ${_cxx} using Cython"
+      DEPENDS ${_dependencies}
+      WORKING_DIRECTORY ${_working_directory}
     )
 
     if(${_src} STREQUAL "types")
