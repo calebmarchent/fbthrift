@@ -134,9 +134,6 @@ set_source_files_properties(
 endmacro()
 
 
-# TODO: How to pass additional Cython includes to the custom command?
-# filename .. depenencies
-
 macro(thrift_cython_to_cxx filename)
   foreach(_src
     "types"
@@ -146,23 +143,32 @@ macro(thrift_cython_to_cxx filename)
     # Parse the arguments
     set(_nextarg)
     set(_dependencies)
+    set(_working_directory)
+    set(_wd_prefix)
+    set(_cython_includes)
     foreach(_arg ${ARGN})
       if("${_arg}" STREQUAL "WORKING_DIRECTORY")
         set(_nextarg "WORKING_DIRECTORY")
       elseif ("${_arg}" STREQUAL "DEPENDS")
         set(_nextarg "DEPENDS")
+      elseif ("${_arg}" STREQUAL "CYTHON_INCLUDES")
+        set(_nextarg "CYTHON_INCLUDES")
       else()
         if("${_nextarg}" STREQUAL "WORKING_DIRECTORY")
           set(_working_directory ${_arg})
+          set(_wd_prefix "${_arg}/")
           set(_nextarg)
         elseif("${_nextarg}" STREQUAL "DEPENDS")
           list(APPEND _dependencies ${_arg})
+        elseif("${_nextarg}" STREQUAL "CYTHON_INCLUDES")
+          list(APPEND _cython_includes "-I${_arg}")
         else()
           message(FATAL_ERROR "Unexpected parameter '${_arg}' in "
             "thrift_cython_to_cxx call")
         endif()
       endif()
     endforeach()
+
 
     set(_pyx "gen-py3/${filename}/${_src}.pyx")
     set(_cxx "gen-py3/${filename}/${_src}.cpp")
@@ -171,28 +177,34 @@ macro(thrift_cython_to_cxx filename)
 
     add_custom_command(OUTPUT ${_cxx}
       COMMAND ${CYTHON_EXE} --fast-fail -3 --cplus ${_pyx} -o ${_cxx}
-        -I${THRIFT_BUILD}/thrift/lib/py3/cybld/
+        ${_cython_includes}
       COMMENT "Generating ${_cxx} using Cython"
       DEPENDS ${_dependencies}
       WORKING_DIRECTORY ${_working_directory}
     )
 
     if(${_src} STREQUAL "types")
-      python_add_module(${_module_name} "${_cxx}")
+      python_add_module(${_module_name} "${_wd_prefix}${_cxx}")
     else()
-      python_add_module(${_module_name} "${_cxx}"
-        "gen-py3/${filename}/${_src}_wrapper.cpp"
+      python_add_module(${_module_name} "${_wd_prefix}${_cxx}"
+        "${_wd_prefix}gen-py3/${filename}/${_src}_wrapper.cpp"
       )
       set_source_files_properties(
-        "gen-py3/${filename}/${_src}_wrapper.cpp"
+        "${_wd_prefix}gen-py3/${filename}/${_src}_wrapper.cpp"
         PROPERTIES GENERATED TRUE
       )
     endif()
+    set_source_files_properties(
+      "${_wd_prefix}${_cxx}"
+      PROPERTIES GENERATED TRUE
+    )
     set_target_properties(${_module_name}
       PROPERTIES
       LIBRARY_OUTPUT_DIRECTORY "gen-py3/${filename}"
       LIBRARY_OUTPUT_NAME ${_src})
   endforeach()
+
+  include_directories(${PYTHON_INCLUDES})
 endmacro()
 
 #

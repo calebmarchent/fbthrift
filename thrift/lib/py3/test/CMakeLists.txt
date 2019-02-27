@@ -24,7 +24,9 @@ macro(thrift_py3_test filename services)
     "test"
   )
 
-  thrift_cython_to_cxx(${filename})
+  thrift_cython_to_cxx(${filename}
+    CYTHON_INCLUDES "${THRIFT_BUILD}/thrift/lib/py3/cybld/"
+  )
 
   foreach(_src
     "types"
