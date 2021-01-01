@@ -51,6 +51,7 @@ create_cybld_tree(thrift thrift/py3
                          std_libcpp.pxd
                          exceptions.pxd
                          exceptions.pyx
+                         enums.cpp
                          types.pxd
                          types.pyx
                          reflection.pxd
@@ -89,7 +90,13 @@ foreach(_mod ${cpp_tgts})
     DEPENDS thrift-symlinks
   )
 
-  python_add_module(${_module_name} "${_cxx}")
+  if ("${_module_name}" STREQUAL "thrift-py3-types-py3")
+    python_add_module(${_module_name} "${_cxx}" "enums.cpp")
+    message( STATUS "Match" )
+  else()
+    python_add_module(${_module_name} "${_cxx}")
+    message( STATUS "${_module_name} No Match *************************************************************************************************" )
+  endif()
   target_link_libraries(${_module_name} thriftcpp2)
   set_target_properties(${_module_name}
     PROPERTIES
